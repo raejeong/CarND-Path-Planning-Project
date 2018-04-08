@@ -166,8 +166,8 @@ vector<double> getXY(double s, double d, const vector<double> &maps_s, const vec
 
 vector<double> waypointInLane(int idx, int lane, const vector<double> &maps_x, const vector<double> &maps_y, const vector<double> &maps_dx, const vector<double> &maps_dy)
 {
-  double x = maps_x[idx] + (4*lane+2)*maps_dx[idx];
-  double y = maps_y[idx] + (4*lane+2)*maps_dy[idx];
+  double x = maps_x[idx] + 0*(4*lane+2)*maps_dx[idx];
+  double y = maps_y[idx] + 0*(4*lane+2)*maps_dy[idx];
 
   return {x,y};
 }
@@ -260,9 +260,16 @@ int main() {
             {
               next_waypoint += 1;
             }
+            double x_diff = abs(car_x-check_x);
+            double y_diff = abs(car_y-check_y);
+            double dist = sqrt(x_diff*x_diff+y_diff*y_diff);
+            if (2.0 > dist)
+            {
+              next_waypoint += 1;
+            }
 
-            int lane = 1;
-            double dist_per = 0.4;
+            int lane = 0;
+            double dist_per = 0.40;
 
             vector<double> xy;
             vector<double> I, X, Y;
@@ -283,34 +290,46 @@ int main() {
             X.push_back(car_x);
             Y.push_back(car_y);
             I.push_back(0);
-            std::cout << "Current position (x,y): " << car_x << ", " << car_y << std::endl;
+            // std::cout << "Current position (x,y): " << car_x << ", " << car_y << std::endl;
 
             xy = waypointInLane(next_waypoint, lane, map_waypoints_x, map_waypoints_y, map_waypoints_dx, map_waypoints_dy);
             X.push_back(xy[0]);
             Y.push_back(xy[1]);
             I.push_back(mid_s-car_s);
-            std::cout << "ClosestWaypoint (x,y): " <<  xy[0] << ", " << xy[1] << std::endl;
-            std::cout << "S: " << mid_s-car_s << std::endl;
+            // std::cout << "ClosestWaypoint (x,y): " <<  xy[0] << ", " << xy[1] << std::endl;
+            // std::cout << "S: " << mid_s-car_s << std::endl;
             
             xy = waypointInLane(next_waypoint+1, lane, map_waypoints_x, map_waypoints_y, map_waypoints_dx, map_waypoints_dy);
             X.push_back(xy[0]);
             Y.push_back(xy[1]);
             I.push_back(end_s-car_s);
-            std::cout << "ClosestWaypoint (x,y): " <<  xy[0] << ", " << xy[1] << std::endl;
-            std::cout << "S: " << end_s-car_s << std::endl;
+            // std::cout << "ClosestWaypoint (x,y): " <<  xy[0] << ", " << xy[1] << std::endl;
+            // std::cout << "S: " << end_s-car_s << std::endl;
 
             x_spline.set_points(I,X);
             y_spline.set_points(I,Y);
+
+            double last_x = car_x;
+            double last_y = car_y;
 
             for (int i = 0; i < int(s_total/dist_per); i++)
             {
               double x = x_spline(i*dist_per);
               double y = y_spline(i*dist_per);
+              double x_diff = abs(x-last_x);
+              double y_diff = abs(y-last_y);
+              double dist = sqrt(x_diff*x_diff+y_diff*y_diff);
               next_x_vals.push_back(x);
               next_y_vals.push_back(y);
-              std::cout << "List (x,y): " <<  x << ", " << y << std::endl;
+              last_x = x;
+              last_y = y;
+              // std::cout << "List (x,y): " <<  x << ", " << y << std::endl;
             }
 
+            if (car_speed > 50)
+            {
+              std::cout << "Car Speed " << car_speed << endl;
+            }
           	// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
           	msgJson["next_x"] = next_x_vals;
           	msgJson["next_y"] = next_y_vals;
