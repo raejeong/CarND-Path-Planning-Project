@@ -8,6 +8,7 @@
 #include "Eigen-3.3/Eigen/Core"
 #include "Eigen-3.3/Eigen/QR"
 #include "json.hpp"
+#include "spline.h"
 
 using namespace std;
 
@@ -163,6 +164,14 @@ vector<double> getXY(double s, double d, const vector<double> &maps_s, const vec
 
 }
 
+vector<double> waypointInLane(int idx, int lane, const vector<double> &maps_x, const vector<double> &maps_y, const vector<double> &maps_dx, const vector<double> &maps_dy)
+{
+  double x = maps_x[idx] + (4*lane+2)*maps_dx[idx];
+  double y = maps_y[idx] + (4*lane+2)*maps_dy[idx];
+
+  return {x,y};
+}
+
 int main() {
   uWS::Hub h;
 
@@ -242,7 +251,26 @@ int main() {
           	vector<double> next_x_vals;
           	vector<double> next_y_vals;
 
+            // Path Planning
+            int next_waypoint_idx = NextWaypoint(car_x, car_y, car_yaw, map_waypoints_x, map_waypoints_y);
+            std::cout << "Next waypoint (x,y): " << map_waypoints_x[next_waypoint_idx] << ", " << map_waypoints_y[next_waypoint_idx] << std::endl;
 
+            if (car_speed < 50)
+            {
+              vector<double> xy;
+              double x, y;
+              int lane = 1;
+              int num_waypoints;
+              std::vector<double> X(num_waypoints+1), Y(num_waypoints+1);
+              X.push_back(car_x);
+              Y.push_back(car_y);
+              for (int i = 0; i < num_waypoints; i++)
+              {
+                xy = waypointInLane(next_waypoint_idx+i, lane, map_waypoints_x, map_waypoints_y, map_waypoints_dx, map_waypoints_dy);
+                X.push_back(xy[0]);
+                Y.push_back(xy[1]);
+              }
+            }
           	// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
           	msgJson["next_x"] = next_x_vals;
           	msgJson["next_y"] = next_y_vals;
